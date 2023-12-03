@@ -8,12 +8,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Main {
     public static void main(String[] args) {
-        ExecutorService executorService = Executors.newFixedThreadPool(64);
+//        ExecutorService executorService = Executors.newFixedThreadPool(64);
         Server.addHandler("GET", "/index.html", new Handler() {
             @Override
             public void handle(Request request, BufferedOutputStream responseServer) {
@@ -35,40 +33,13 @@ public class Main {
                 }
             }
         });
-
-        try (ServerSocket serverSocket = Server.getServer(9999)) {
-            while (true) {
-                Socket socket = serverSocket.accept();
-                executorService.execute(new Thread(() -> {
-                    try (final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                         final var out = new BufferedOutputStream(socket.getOutputStream())) {
-                        var requestLine = in.readLine();
-                        final var parts = requestLine.split(" ");
-
-                        Request request = new Request(requestLine);
-                        requestLine = in.readLine();
-                        while (requestLine != null) {
-                            if( requestLine.isEmpty()) break;
-                            request.addHeader(requestLine);
-                            requestLine = in.readLine();
-                        }
-
-                        if (parts.length != 3) {
-                            socket.close();
-                        }
-//                        Server.serverAnswer(parts, out);
-                        Handler handler = Server.getHandler(request);
-                        handler.handle(request, out);
-                        socket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }));
-            }
-
+        ServerSocket serverSocket = null;
+        try {
+            serverSocket = Server.getServer(9999);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        Server.start(serverSocket);
     }
 }
 

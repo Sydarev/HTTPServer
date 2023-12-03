@@ -2,26 +2,33 @@ package ru.netology;
 
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private static ServerSocket server;
+    private static int serverPort;
     private static boolean isServerCreated = false;
     final static List<String> validPaths = List.of("/index.html", "/spring.svg", "/spring.png",
             "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html",
             "/classic.html", "/events.html", "/events.js");
     final static Map<String, Handler> handlers = new ConcurrentHashMap<>();
+    final static ExecutorService executorService = Executors.newFixedThreadPool(64);
 
     public static ServerSocket getServer(int port) throws IOException {
         if (!isServerCreated) {
+            serverPort = port;
             isServerCreated = true;
             server = new ServerSocket(port);
         }
@@ -89,7 +96,7 @@ public class Server {
 
     public static Handler getHandler(Request request) {
         var parts = request.getStartingLine().split(" ");
-        var findKey = parts[0]+parts[1];
+        var findKey = parts[0] + parts[1];
         for (Map.Entry<String, Handler> entry : handlers.entrySet()) {
             if (entry.getKey().equals(findKey)) {
                 return entry.getValue();
@@ -100,12 +107,44 @@ public class Server {
             public void handle(Request string, BufferedOutputStream responseServer) throws IOException {
                 responseServer.write((
                         "HTTP/1.1 404 Not Found\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n").getBytes());
+                                "Content-Length: 0\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n").getBytes());
                 responseServer.flush();
             }
         };
+    }
+
+    public static void start(ServerSocket serverSocket) {
+        try {
+            while (true) {
+                Socket socket = serverSocket.accept();
+                executorService.execute(new Thread(() -> {
+                    try (final var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                         final var out = new BufferedOutputStream(socket.getOutputStream())) {
+                        var requestLine = in.readLine();
+                        final var parts = requestLine.split(" ");
+                        Request request = new Request(requestLine);
+                        requestLine = in.readLine();
+                        while (requestLine != null) {
+                            if (requestLine.isEmpty()) break;
+                            request.addHeader(requestLine);
+                            requestLine = in.readLine();
+                        }
+                        if (parts.length != 3) {
+                            socket.close();
+                        }
+                        Handler handler = Server.getHandler(request);
+                        handler.handle(request, out);
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
