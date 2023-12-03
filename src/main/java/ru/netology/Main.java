@@ -11,7 +11,6 @@ import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) {
-//        ExecutorService executorService = Executors.newFixedThreadPool(64);
         Server.addHandler("GET", "/index.html", new Handler() {
             @Override
             public void handle(Request request, BufferedOutputStream responseServer) {
