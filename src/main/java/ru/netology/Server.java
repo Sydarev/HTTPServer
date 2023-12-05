@@ -126,6 +126,7 @@ public class Server {
                          final var out = new BufferedOutputStream(socket.getOutputStream())) {
                         Request request = new Request();
                         parseRequest(out, in, request);
+//                        request.parseQueryParam();
                         System.out.println("all the query: " + request.getQueryParams());
                         System.out.println("value = " + request.getQueryParam("value"));
                         Handler handler = Server.getHandler(request);

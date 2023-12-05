@@ -6,6 +6,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import java.io.BufferedInputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,9 +15,13 @@ public class Request {
     private List<String> headers = new ArrayList<>();
 
     private String requestLine;
-
+    private List<NameValuePair> params;
     public void setRequestLine(String requestLine) {
         this.requestLine = requestLine;
+    }
+
+    public void parseQueryParam() throws MalformedURLException {
+         this.params = URLEncodedUtils.parse(URI.create("http://localhost:9999" + requestLine.split(" ")[1]), "UTF-8");
     }
 
     public String getRequestLine() {
@@ -38,7 +43,8 @@ public class Request {
     }
 
     public List<NameValuePair> getQueryParams() throws MalformedURLException {
-        return URLEncodedUtils.parse(URI.create("http://localhost:9999" + requestLine.split(" ")[1]), "UTF-8");
+        if (params == null) parseQueryParam();
+        return params;
     }
     public String getQueryParam(String name) throws MalformedURLException {
         var params = getQueryParams();
