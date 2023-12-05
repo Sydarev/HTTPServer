@@ -11,8 +11,8 @@ public class Main {
         Server.addHandler("GET", "/index.html", new Handler() {
             @Override
             public void handle(Request request, BufferedOutputStream responseServer) {
-                var parts = request.getStartingLine().split(" ");
-                var filePath = Path.of(".", "public", parts[1]);
+                var parts = request.getRequestLine().split(" ");
+                var filePath = Path.of(".", "public", request.getPath()/*parts[1]*/);
                 try {
                     var mimeType = Files.probeContentType(filePath);
                     responseServer.write((
