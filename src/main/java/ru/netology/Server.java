@@ -127,8 +127,10 @@ public class Server {
                         Request request = new Request();
                         parseRequest(out, in, request);
 //                        request.parseQueryParam();
-                        System.out.println("all the query: " + request.getQueryParams());
-                        System.out.println("value = " + request.getQueryParam("value"));
+//                        System.out.println("all the query: " + request.getQueryParams());
+//                        System.out.println("value = " + request.getQueryParam("value"));
+                        System.out.println("body name value: "+request.getPostParam("value"));
+                        System.out.println("all the bodies: "+request.getPostParams());
                         Handler handler = Server.getHandler(request);
                         handler.handle(request, out);
                         socket.close();
@@ -183,7 +185,18 @@ public class Server {
         final var headersBytes = in.readNBytes(headersEnd - headersStart);
         final var headers = Arrays.asList(new String(headersBytes).split("\r\n"));
         request.addHeaders(headers);
+        request.showHeaders();
 //        System.out.println(headers);
+        if(!method.equals(GET)){
+            in.skip(headersDelimiter.length);
+            final var contentLength = request.extractHeader("Content-Length");
+            if(contentLength.isPresent()){
+                final var length = Integer.parseInt(contentLength.get());
+                final var bodyBytes = in.readNBytes(length);
+                final var body = new String(bodyBytes);
+                request.addBodies(body);
+            }
+        }
     }
 
     private static int indexOf(byte[] array, byte[] target, int start, int max) {
