@@ -14,6 +14,7 @@ public class Main {
                 var parts = request.getRequestLine().split(" ");
                 var filePath = Path.of(".", "public", request.getPath()/*parts[1]*/);
                 try {
+
                     var mimeType = Files.probeContentType(filePath);
                     responseServer.write((
                             "HTTP/1.1 200 OK\r\n" +
